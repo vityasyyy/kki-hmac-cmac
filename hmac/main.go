@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"fmt"
+	"encoding/hex"
 )
 
 func hmacSHA256(key, message []byte) []byte {
@@ -45,10 +46,45 @@ func hmacSHA256(key, message []byte) []byte {
 	return hmacResult
 }
 
+// Simulate a trusted sender
+func sender(key, message []byte) (msg, tag []byte) {
+	tag = hmacSHA256(key, message)
+	return message, tag
+}
+
+// Simulate MITM trying to tamper the message
+func mitmTamper(originalMsg, originalTag []byte) (msg, tag []byte) {
+	// Tamper with the message
+	tamperedMsg := make([]byte, len(originalMsg))
+	copy(tamperedMsg, originalMsg)
+	tamperedMsg[0] ^= 0x01 // change one byte
+
+	// MITM doesn't know the key, so they cannot forge a valid tag
+	return tamperedMsg, originalTag
+}
+
+// Simulate the receiver
+func receiver(key, receivedMsg, receivedTag []byte) bool {
+	expectedTag := hmacSHA256(key, receivedMsg)
+	return hex.EncodeToString(expectedTag) == hex.EncodeToString(receivedTag)
+}
+
 func main() {
 	key := []byte("supersecretkey")
-	message := []byte("attackatdawn")
+	message := []byte("Attack at dawn")
 
-	mac := hmacSHA256(key, message)
-	fmt.Printf("HMAC SHA256: %x\n", mac)
+	// Sender sends message + tag
+	msg, tag := sender(key, message)
+	fmt.Printf("Sender:\n  Message: %s\n  Tag: %x\n\n", msg, tag)
+
+	// MITM modifies message but reuses tag
+	tamperedMsg, tamperedTag := mitmTamper(msg, tag)
+	fmt.Printf("MITM:\n  Tampered Message: %s\n  Tag (unchanged): %x\n\n", tamperedMsg, tamperedTag)
+
+	// Receiver verifies integrity
+	if receiver(key, tamperedMsg, tamperedTag) {
+		fmt.Println("Receiver: ✅ Integrity Verified (SHOULD NOT HAPPEN!)")
+	} else {
+		fmt.Println("Receiver: ❌ Integrity Check Failed (MITM detected!)")
+	}
 }

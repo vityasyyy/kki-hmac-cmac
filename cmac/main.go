@@ -91,10 +91,39 @@ func cmacAES128(key, msg []byte) []byte {
 	return X
 }
 
+// Sender
+func sender(key, message []byte) (msg, tag []byte) {
+	tag = cmacAES128(key, message)
+	return message, tag
+}
+
+// MITM (attacker modifies message, can't recompute tag)
+func mitmTamper(msg, tag []byte) (newMsg, newTag []byte) {
+	newMsg = make([]byte, len(msg))
+	copy(newMsg, msg)
+	newMsg[0] ^= 0x01 // modify first byte
+	return newMsg, tag // reuse original tag
+}
+
+// Receiver
+func receiver(key, msg, tag []byte) bool {
+	expected := cmacAES128(key, msg)
+	return hex.EncodeToString(expected) == hex.EncodeToString(tag)
+}
+
 func main() {
 	key := []byte("thisis16bytekey!")
-	message := []byte("message to cmac")
+	message := []byte("Meet at midnight")
 
-	mac := cmacAES128(key, message)
-	fmt.Printf("CMAC-AES128: %s\n", hex.EncodeToString(mac))
+	msg, tag := sender(key, message)
+	fmt.Printf("Sender:\n  Message: %s\n  Tag: %x\n\n", msg, tag)
+
+	tamperedMsg, tamperedTag := mitmTamper(msg, tag)
+	fmt.Printf("MITM:\n  Tampered Message: %s\n  Tag (unchanged): %x\n\n", tamperedMsg, tamperedTag)
+
+	if receiver(key, tamperedMsg, tamperedTag) {
+		fmt.Println("Receiver: ✅ Integrity Verified (SHOULD NOT HAPPEN!)")
+	} else {
+		fmt.Println("Receiver: ❌ Integrity Check Failed (MITM detected!)")
+	}
 }
