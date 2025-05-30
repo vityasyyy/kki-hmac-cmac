@@ -7,8 +7,9 @@ Kelompok 4:
     3. Daffa Indra Wibowo (23/518514/PA/22253)
     4. Muhammad Argya Vityasy(23/522547/PA/22475)
 ```
-Course: Kriptografi dan Keamanan Informasi
-Instructor: Drs. Edi Winarko, M.Sc.,Ph.D.
+Course: Kriptografi dan Keamanan Informasi KOM A
+
+Lecturer: Drs. Edi Winarko, M.Sc.,Ph.D.
 
 # Cryptographic Message Authentication Codes (MAC) Implementation
 
